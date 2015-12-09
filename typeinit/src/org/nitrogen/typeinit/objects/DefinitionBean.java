@@ -39,5 +39,16 @@ public class DefinitionBean {
 	public void setFunctionSequence(String[] fnSequence) {
 		this.functionSequence = fnSequence;
 	}
+	
+	@Override
+	public String toString() {
+		StringBuffer objectString = new StringBuffer();
+		objectString.append("DefinitionSequence for "+typeBean.getTypeName()+"\n");
+		objectString.append("From File - "+filePath+"\n");
+		for(String def : defSequence){
+			objectString.append("\t"+def+"\n");
+		}
+		return objectString.toString();
+	}
 
 }

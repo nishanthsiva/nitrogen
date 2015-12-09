@@ -14,23 +14,16 @@ import org.nitrogen.typeinit.objects.TypeBean;
 
 public class FileUtil {
 
-	private String fileName;
-	private FileReader fileReader;
-	private BufferedReader bufReader;
 	
 	private static final Logger LOGGER = Logger.getLogger(FileUtil.class.getName());
 	private static final String CLASS_NAME = FileUtil.class.getName();
 	
-	public FileUtil(String fileName) throws FileNotFoundException {
-		this.fileName = fileName;
-		fileReader = new FileReader(this.fileName);
-		bufReader = new BufferedReader(fileReader);
-	}
-	
-	public List<DefinitionBean> getDefitionSequence(TypeBean typeObject) throws IOException{
+	public static List<DefinitionBean> getDefitionSequence(TypeBean typeObject, String filePath) throws IOException{
 		final String METHOD_NAME = "getInitSequence";
 		LOGGER.entering(CLASS_NAME, METHOD_NAME);
 		
+		FileReader fileReader = new FileReader(filePath);;
+		BufferedReader bufReader = new BufferedReader(fileReader);
 		List<DefinitionBean> defBeanList = new ArrayList<DefinitionBean>();
 		List<String> sequence = new ArrayList<String>();
 		int lineNumber = 1;
@@ -40,12 +33,12 @@ public class FileUtil {
 				sequence.remove(0);
 			sequence.add(line);
 			if(ParsingUtil.isAssignStatement(line) && hasInitType(line,typeObject)){
-				sequence.addAll(getFollowSequence());
+				sequence.addAll(getFollowSequence(bufReader));
 				if(sequence.size() > 0){
 					DefinitionBean defBean = new DefinitionBean();
 					defBean.setTypeBean(typeObject);
 					defBean.setLineNumber(lineNumber);
-					defBean.setFilePath(fileName);
+					defBean.setFilePath(filePath);
 					defBean.setDefSequence(sequence.toArray(new String[0]));
 					defBeanList.add(defBean);
 					sequence = new ArrayList<String>();
@@ -59,7 +52,7 @@ public class FileUtil {
 		return defBeanList;
 	}
 	
-	private List<String> getFollowSequence() throws IOException{
+	private static List<String> getFollowSequence(BufferedReader bufReader) throws IOException{
 		final String METHOD_NAME = "getFollowSequence";
 		LOGGER.entering(CLASS_NAME, METHOD_NAME);
 		
@@ -75,7 +68,7 @@ public class FileUtil {
 		return followSequence;
 	}
 	
-	private boolean hasInitType(String statement, TypeBean typeObject){
+	private static boolean hasInitType(String statement, TypeBean typeObject){
 		final String METHOD_NAME = "getInitType";
 		LOGGER.entering(CLASS_NAME, METHOD_NAME);
 		boolean hasInitType = false;
@@ -90,13 +83,46 @@ public class FileUtil {
 		return hasInitType;
 		
 	}
+	
+	public static String getVariableType(String variable, String filePath) throws IOException{
+		final String METHOD_NAME = "getVariableType";
+		LOGGER.entering(CLASS_NAME, METHOD_NAME);
+		
+		FileReader fileReader = new FileReader(filePath);;
+		BufferedReader bufReader = new BufferedReader(fileReader);
+		String variableType = null;
+		
+		while(bufReader.ready()){
+			String line = bufReader.readLine();
+			if(line.contains(variable)){
+				LOGGER.info("Line found -"+line);
+				String[] tokens = line.split(" ");
+				for(int i =0; i< tokens.length; i++){
+					String tempVar = tokens[i].replaceAll("\\*", "");
+					tempVar = tempVar.replaceAll(",", "");
+					System.out.println(tokens[i]);
+					if(tempVar.equals(variable) && i != 0){
+						variableType = StringUtil.removePunctuations(tokens[i-1]);
+						break;
+					}
+				}
+				if(variableType != null){
+					break;
+				}
+			}
+		}
+		
+		bufReader.close();
+		fileReader.close();
+		LOGGER.exiting(CLASS_NAME, METHOD_NAME);
+		return variableType;
+	}
 	public static void main(String[] args) {
-		FileUtil fileutil;
 		try {
-			fileutil = new FileUtil("/Users/nishanthsivakumar/Workspace/testprojects/gnuprojects/out/gawk/debug.c");
 			TypeBean typeObject = new TypeBean();
 			typeObject.setTypeName("FILE");
-			for(DefinitionBean defBean : fileutil.getDefitionSequence(typeObject)){
+			
+			for(DefinitionBean defBean : FileUtil.getDefitionSequence(typeObject,"/Users/nishanthsivakumar/Workspace/testprojects/gnuprojects/out/gawk/debug.c")){
 				for(String line: defBean.getDefSequence()){
 						System.out.println(line);
 				}
